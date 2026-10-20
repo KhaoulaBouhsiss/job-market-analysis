@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>JobScope — Smart Job Market Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18.7 8 13 13.7l-3-3L7 13.7"/></svg></span>
+      <span class="brand-text">Job<strong>Scope</strong></span>
+    </div>
+    <nav class="nav">
+      <button class="nav-item active" data-view="dashboard">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Dashboard
+      </button>
+      <button class="nav-item" data-view="analytics">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics
+      </button>
+      <button class="nav-item" data-view="browse">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>Browse Data
+      </button>
+      <button class="nav-item" data-view="upload">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload CSV
+      </button>
+      <div class="nav-divider"></div>
+      <button class="nav-item nav-cv" data-view="analyzecv">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Analyze CV
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <p>Données : MySQL</p>
+      <p id="recordCount">— enregistrements</p>
+    </div>
+  </aside>
+
+  <main class="content">
+
+    <!-- DASHBOARD -->
+    <section class="view active" id="view-dashboard">
+      <header class="view-header"><div><h1>Dashboard</h1><p>Vue d'ensemble du marché de l'emploi</p></div></header>
+      <div class="stat-grid">
+        <div class="stat-card"><p class="stat-label">Total Listings</p><p class="stat-value" id="statTotal">—</p><p class="stat-icon listings">📋</p></div>
+        <div class="stat-card"><p class="stat-label">Avg Salary</p><p class="stat-value" id="statAvgSalary">—</p><p class="stat-icon salary">💰</p></div>
+        <div class="stat-card"><p class="stat-label">Top Skill</p><p class="stat-value" id="statTopSkill">—</p><p class="stat-icon skill">⚡</p></div>
+        <div class="stat-card"><p class="stat-label">Leading Industry</p><p class="stat-value" id="statIndustry">—</p><p class="stat-icon industry">🏢</p></div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card chart-wide"><h3>Listings Over Time</h3><div class="chart-box"><canvas id="areaChart"></canvas></div></div>
+        <div class="chart-card"><h3>Industry Distribution</h3><div class="chart-box"><canvas id="industryPie"></canvas></div></div>
+        <div class="chart-card"><h3>Work Mode</h3><div class="chart-box"><canvas id="workModeDonut"></canvas></div></div>
+        <div class="chart-card chart-wide"><h3>Experience Level</h3><div class="chart-box"><canvas id="experienceBar"></canvas></div></div>
+      </div>
+    </section>
+
+    <!-- ANALYTICS -->
+    <section class="view" id="view-analytics">
+      <header class="view-header"><div><h1>Analytics</h1><p>Tendances détaillées des compétences et salaires</p></div></header>
+      <div class="chart-grid">
+        <div class="chart-card chart-wide"><h3>Skills in Demand</h3><div class="chart-box"><canvas id="skillsDemandChart"></canvas></div></div>
+        <div class="chart-card chart-wide"><h3>Salary Distribution</h3><div class="chart-box"><canvas id="salaryHistogram"></canvas></div></div>
+        <div class="chart-card chart-wide"><h3>Average Salary Trend</h3><div class="chart-box"><canvas id="salaryTrendChart"></canvas></div></div>
+      </div>
+    </section>
+
+    <!-- BROWSE DATA -->
+    <section class="view" id="view-browse">
+      <header class="view-header">
+        <div><h1>Browse Data</h1><p>Filtrer, rechercher et exporter les offres</p></div>
+        <button class="btn-primary" id="exportBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV</button>
+      </header>
+      <div class="filter-bar">
+        <input type="text" id="searchInput" placeholder="Rechercher..." class="filter-input"/>
+        <select id="filterIndustry" class="filter-select"><option value="">Toutes les industries</option></select>
+        <select id="filterMode" class="filter-select"><option value="">Tous les modes</option></select>
+        <select id="filterExperience" class="filter-select"><option value="">Toutes les expériences</option></select>
+        <button class="btn-ghost" id="resetFilters">Réinitialiser</button>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Poste</th><th>Entreprise</th><th>Industrie</th><th>Lieu</th><th>Mode</th><th>Expérience</th><th>Salaire</th><th>Compétences</th><th>Date</th></tr></thead>
+          <tbody id="tableBody"><tr><td colspan="9" class="empty-cell">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="pagination" id="pagination"></div>
+    </section>
+
+    <!-- UPLOAD CSV -->
+    <section class="view" id="view-upload">
+      <header class="view-header">
+        <div><h1>Upload CSV</h1><p>Importez vos données ou restaurez l'échantillon</p></div>
+        <button class="btn-ghost" id="restoreSampleBtn">↺ Restaurer l'échantillon</button>
+      </header>
+      <div class="upload-zone" id="uploadZone">
+        <div class="upload-icon-big"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+        <p class="upload-title">Glissez-déposez votre fichier CSV ici</p>
+        <p class="upload-sub">ou</p>
+        <button class="btn-primary" type="button" onclick="document.getElementById('csvFileInput').click()">Choisir un fichier</button>
+        <input type="file" id="csvFileInput" accept=".csv" hidden/>
+        <p class="upload-filename" id="csvFileName"></p>
+      </div>
+      <div class="mapping-card" id="mappingCard" style="display:none">
+        <h3>Associez les colonnes de votre fichier au schéma</h3>
+        <p class="mapping-sub">Sélectionnez la colonne correspondante pour chaque champ.</p>
+        <div class="mapping-grid" id="mappingGrid"></div>
+        <div class="mapping-actions">
+          <button class="btn-ghost" id="cancelMappingBtn">Annuler</button>
+          <button class="btn-primary" id="confirmImportBtn">Importer les données</button>
+        </div>
+      </div>
+      <div class="upload-result" id="uploadResult" style="display:none"></div>
+    </section>
+
+    <!-- ANALYZE CV -->
+    <section class="view" id="view-analyzecv">
+      <header class="view-header">
+        <div><h1>Analyze CV</h1><p>Uploadez votre CV et choisissez une offre depuis la base de données</p></div>
+      </header>
+
+      <div id="cvForm">
+        <!-- STEP 1 -->
+        <div class="step-card">
+          <div class="step-header">
+            <span class="step-num">1</span>
+            <div><p class="step-title">Uploadez votre CV (PDF)</p><p class="step-sub">Glissez-déposez ou sélectionnez votre fichier</p></div>
+          </div>
+          <div class="cv-drop-zone" id="cvDropZone">
+            <div class="upload-icon-big"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg></div>
+            <p style="font-size:14px;color:#5c5a54">Glissez votre CV ici ou</p>
+            <button class="btn-primary" type="button" onclick="document.getElementById('cvPdfInput').click()">Choisir le CV (PDF)</button>
+            <input type="file" id="cvPdfInput" accept=".pdf" hidden/>
+            <p class="cv-filename" id="cvPdfName">Aucun fichier sélectionné</p>
+          </div>
+        </div>
+
+        <!-- STEP 2 -->
+        <div class="step-card">
+          <div class="step-header">
+            <span class="step-num">2</span>
+            <div><p class="step-title">Sélectionnez une offre d'emploi depuis la base de données</p><p class="step-sub">Filtrez et cliquez sur une ligne pour choisir l'offre à comparer</p></div>
+          </div>
+          <div class="filter-bar" style="margin-bottom:14px">
+            <input type="text" id="offerSearch" placeholder="Rechercher un poste, entreprise, compétence..." class="filter-input"/>
+            <select id="offerIndustry" class="filter-select"><option value="">Toutes les industries</option></select>
+            <select id="offerMode" class="filter-select"><option value="">Tous les modes</option></select>
+            <button class="btn-ghost" id="offerReset">Réinitialiser</button>
+          </div>
+          <div class="table-wrap" style="max-height:300px;overflow-y:auto">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width:36px"></th>
+                  <th>Poste</th><th>Entreprise</th><th>Industrie</th>
+                  <th>Mode</th><th>Expérience</th><th>Salaire</th><th>Compétences requises</th>
+                </tr>
+              </thead>
+              <tbody id="offerTableBody"><tr><td colspan="8" class="empty-cell">Chargement…</td></tr></tbody>
+            </table>
+          </div>
+          <div class="selected-offer" id="selectedOfferBox" style="display:none">
+            <span class="selected-label">✓ Offre sélectionnée :</span>
+            <span id="selectedOfferName" style="flex:1;font-weight:500"></span>
+            <button class="btn-ghost" style="padding:4px 10px;font-size:12px" id="clearOfferBtn">×</button>
+          </div>
+        </div>
+
+        <div class="cv-submit-row">
+          <button class="btn-analyze" id="analyzeBtn" disabled>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Lancer l'analyse IA
+          </button>
+        </div>
+      </div>
+
+      <!-- Loader -->
+      <div class="cv-loader" id="cvLoader" style="display:none">
+        <div class="loader-spinner"></div>
+        <p class="loader-text">Analyse en cours…</p>
+        <p class="loader-sub">Claude AI compare votre CV avec l'offre sélectionnée</p>
+      </div>
+
+      <!-- Results -->
+      <div id="cvResults" style="display:none">
+        <div class="score-banner">
+          <div class="score-left">
+            <p class="score-label">Score de compatibilité</p>
+            <p class="score-niveau" id="cvNiveau">—</p>
+            <p class="score-resume" id="cvResume">—</p>
+          </div>
+          <div class="score-right">
+            <div class="score-circle">
+              <svg class="score-svg" viewBox="0 0 120 120">
+                <circle class="score-bg" cx="60" cy="60" r="52"/>
+                <circle class="score-fill" id="scoreArc" cx="60" cy="60" r="52" stroke-dasharray="0 327"/>
+              </svg>
+              <span class="score-number" id="scoreNumber">0</span>
+            </div>
+          </div>
+        </div>
+        <div class="two-col">
+          <div class="result-card card-green"><h3 class="card-title"><span class="dot dot-green"></span>Compétences matchées</h3><ul class="tag-list" id="cvMatchees"></ul></div>
+          <div class="result-card card-red"><h3 class="card-title"><span class="dot dot-red"></span>Compétences manquantes</h3><ul class="tag-list" id="cvManquantes"></ul></div>
+        </div>
+        <div class="two-col">
+          <div class="result-card"><h3 class="card-title"><span class="dot dot-green"></span>Points forts</h3><div id="cvForts" class="point-list"></div></div>
+          <div class="result-card"><h3 class="card-title"><span class="dot dot-orange"></span>Points à améliorer</h3><div id="cvFaibles" class="point-list"></div></div>
+        </div>
+        <div class="result-card reco-card">
+          <h3 class="card-title"><span class="dot dot-blue"></span>Recommandations personnalisées</h3>
+          <ol class="reco-list" id="cvRecos"></ol>
+        </div>
+        <div class="reset-row"><button class="btn-ghost" id="cvResetBtn">← Nouvelle analyse</button></div>
+      </div>
+    </section>
+
+  </main>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
